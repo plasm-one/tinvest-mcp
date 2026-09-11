@@ -52,18 +52,11 @@ MCP-сервер ([Model Context Protocol](https://modelcontextprotocol.io)), к
 может пропустить, оценивается по свежей котировке и ограничено численными
 лимитами, живущими в вашем конфиг-файле, а не в промпте.
 
-```
-┌────────────────────┐   stdio (пайпы)   ┌──────────────────┐   gRPC + TLS   ┌──────────────┐
-│  Claude Code /     │◄─────────────────►│   tinvest-mcp    │◄──────────────►│  T-Bank      │
-│  Cursor / VS Code  │                   │  (ваша машина)   │                │  Invest API  │
-└────────────────────┘                   └────────┬─────────┘                └──────────────┘
-                                                  │ читает
-                                         ┌────────▼─────────┐
-                                         │ .env  (токен)    │  не покидает эту машину,
-                                         │ config.toml      │  кроме обращений к самому
-                                         │ audit.jsonl      │  брокеру
-                                         └──────────────────┘
-```
+<p align="center">
+  <img src="https://raw.githubusercontent.com/wutas/tinvest-mcp/main/docs/assets/architecture.png"
+       alt="Claude Code / Cursor / VS Code общаются с tinvest-mcp через stdio; tinvest-mcp ходит в T-Bank Invest API по gRPC+TLS и читает .env, config.toml и audit.jsonl с вашей машины"
+       width="900">
+</p>
 
 **Токен не уходит никуда, кроме брокера, который его выпустил.** Он не хранится
 в конфиге вашего редактора, не синхронизируется между машинами и не

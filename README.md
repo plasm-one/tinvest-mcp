@@ -51,18 +51,11 @@ Reads are open; everything that touches money goes through a preview that the
 model cannot skip, priced against a fresh quote, bounded by numeric limits that
 live in your config file rather than in a prompt.
 
-```
-┌────────────────────┐   stdio (pipes)   ┌──────────────────┐   gRPC + TLS   ┌──────────────┐
-│  Claude Code /     │◄─────────────────►│   tinvest-mcp    │◄──────────────►│  T-Bank      │
-│  Cursor / VS Code  │                   │  (your machine)  │                │  Invest API  │
-└────────────────────┘                   └────────┬─────────┘                └──────────────┘
-                                                  │ reads
-                                         ┌────────▼─────────┐
-                                         │ .env  (token)    │  never leaves this machine
-                                         │ config.toml      │  except to the broker itself
-                                         │ audit.jsonl      │
-                                         └──────────────────┘
-```
+<p align="center">
+  <img src="https://raw.githubusercontent.com/wutas/tinvest-mcp/main/docs/assets/architecture.png"
+       alt="Claude Code / Cursor / VS Code talk to tinvest-mcp over stdio; tinvest-mcp talks to the T-Bank Invest API over gRPC+TLS and reads .env, config.toml and audit.jsonl from your machine"
+       width="900">
+</p>
 
 **The token never goes anywhere except to the broker that issued it.** It is not
 stored in your editor's config, not synced between machines, and not sent to any
