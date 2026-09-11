@@ -1,0 +1,93 @@
+name: Bug report
+description: Something does not work as documented
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Do not post a token.** Not a real one, not a revoked one, not a
+        truncated one. If you paste one by accident, revoke it immediately at
+        <https://www.tbank.ru/invest/settings/api/>.
+
+        **Security issues do not belong here** — see
+        [SECURITY.md](../../SECURITY.md) for private reporting.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you expected, and what you got instead.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Asked the assistant to …
+        2. It called `list_bonds` with …
+        3. Got …
+    validations:
+      required: true
+
+  - type: textarea
+    id: doctor
+    attributes:
+      label: Output of `tinvest-mcp-doctor`
+      description: >
+        Token-free by construction — it prints presence and a mask, never a
+        value. This is usually enough to diagnose a configuration problem.
+      render: text
+    validations:
+      required: true
+
+  - type: textarea
+    id: config
+    attributes:
+      label: Relevant part of config.toml
+      description: >
+        `config.toml` is secret-free by design, so it is safe to paste.
+        Do NOT paste `.env`.
+      render: toml
+
+  - type: input
+    id: mode
+    attributes:
+      label: Mode
+      placeholder: sandbox / prod (research only) / prod (real trading armed)
+    validations:
+      required: true
+
+  - type: input
+    id: client
+    attributes:
+      label: MCP client and version
+      placeholder: Claude Code 2.x / Claude Desktop / Cursor / VS Code …
+    validations:
+      required: true
+
+  - type: input
+    id: env
+    attributes:
+      label: Python version, OS, tinvest-mcp version
+      placeholder: Python 3.13.3, macOS 15.6, tinvest-mcp 0.1.0
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Server output (stderr)
+      description: Check it for anything token-shaped before pasting.
+      render: text
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Confirmations
+      options:
+        - label: I have not pasted an API token anywhere in this issue
+          required: true
+        - label: I read the relevant section of the docs and it did not cover this
+          required: true

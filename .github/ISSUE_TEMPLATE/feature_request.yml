@@ -1,0 +1,57 @@
+name: Feature request
+description: Suggest a tool, a filter, or a configuration option
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before writing: a few things are deliberately out of scope and will be
+        declined — see [CONTRIBUTING.md](../../CONTRIBUTING.md#what-will-not-be-merged).
+        In short: no automated trading without a human in the loop, no tools
+        returning news / sentiment / fetched web content, no flag that skips a
+        confirmation gate or a risk check, and no telemetry.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do
+      description: The task, not the implementation. What does the current tool set make awkward?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What you would like
+      description: A new tool, an argument on an existing one, a config key — whatever fits.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Does this reach the broker with a mutation?
+      description: >
+        Anything that mutates needs a risk path, an audit record, an
+        idempotency key and a mode gate — so it is a bigger change than it looks.
+      options:
+        - "No — read-only"
+        - "No — writes local state only"
+        - "Yes — it would place, cancel or modify something at the broker"
+        - "Not sure"
+    validations:
+      required: true
+
+  - type: textarea
+    id: api
+    attributes:
+      label: Which T-Invest API method provides this
+      description: >
+        A link to <https://developer.tbank.ru/invest/api> or the SDK method
+        name, if you know it. Not required, but it speeds things up a lot.
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: What you tried instead
+      description: Existing tools you combined, and where that fell short.

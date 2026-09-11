@@ -1,0 +1,67 @@
+# Container deployment for tinvest-mcp.
+#
+# SECURITY: this runs the HTTP transport, which has NO authentication of its
+# own — whatever can reach the port can call every tool with your token. The
+# port is therefore published to 127.0.0.1 only. Do not change it to a bare
+# "8003:8003" (which binds every interface) unless there is an authenticating
+# reverse proxy in front. See docs/security.md § Transport security.
+#
+# For desktop use, prefer running over stdio instead — no port at all.
+
+services:
+  tinvest-mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: tinvest-mcp:local
+
+    # Tokens. Keep this file chmod 600; it is the only secret input.
+    env_file:
+      - .env
+
+    environment:
+      TINVEST_MCP_TRANSPORT: http
+      TINVEST_MCP_HOST: 0.0.0.0        # inside the container namespace only
+      TINVEST_MCP_PORT: "8003"
+      TINVEST_MCP_CONFIG: /config/config.toml
+      TINVEST_MCP_STATE_DIR: /state
+      TINVEST_MCP_LOG_LEVEL: INFO
+
+    # Loopback only. This is the line that keeps an unauthenticated trading
+    # endpoint off your network.
+    ports:
+      - "127.0.0.1:8003:8003"
+
+    volumes:
+      # Risk limits, read-only: the container must not be able to raise its own caps.
+      - ./config.toml:/config/config.toml:ro
+      # Audit journal and saved profile, persisted across rebuilds.
+      - tinvest-state:/state
+
+    restart: unless-stopped
+
+    # No privileges are needed to speak gRPC to one host.
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: true
+    tmpfs:
+      # tls.py caches the combined CA bundle in the temp directory.
+      - /tmp:size=16m
+
+    healthcheck:
+      test: ["CMD", "python", "-c", "import socket; s=socket.socket(); s.settimeout(3); s.connect(('127.0.0.1',8003)); s.close()"]
+      interval: 60s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  tinvest-state:

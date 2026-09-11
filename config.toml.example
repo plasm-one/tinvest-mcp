@@ -1,0 +1,155 @@
+### ==========================================================================
+### tinvest-mcp — non-secret configuration
+###
+###   cp config.toml.example config.toml
+###
+### This file is safe to commit and safe to paste into a bug report: it holds
+### no credentials. Tokens live in .env only.
+###
+### Every value below is read from this file and NOT from the environment.
+### That is deliberate: a risk limit that a stray environment variable could
+### raise is not a risk limit. To change a cap, edit this file and restart.
+###
+### Full reference: docs/configuration.md
+### ==========================================================================
+
+
+### --- Transport ------------------------------------------------------------
+[server]
+# "stdio"  — the client spawns the server as a child process and talks over
+#            pipes. Nothing listens on a port. THIS IS THE SAFE DEFAULT.
+# "http"   — a network-reachable server. FastMCP's HTTP transport has NO
+#            authentication of its own: anyone who can reach the port can
+#            trade through your token. Read docs/security.md § HTTP first.
+transport = "stdio"
+
+# Only used when transport = "http". Keep loopback; put a reverse proxy with
+# real authentication in front if you need remote access.
+host = "127.0.0.1"
+port = 8003
+
+# DEBUG | INFO | WARNING | ERROR. Logs go to stderr — stdout is the MCP
+# protocol channel on stdio and a stray print there corrupts the stream.
+log_level = "INFO"
+
+
+### --- Broker connection ----------------------------------------------------
+[tinvest]
+# "sandbox" — T-Bank's virtual-money servers. Real orders cannot happen.
+# "prod"    — your real brokerage account.
+mode = "sandbox"
+
+# Leave empty. Account ids are resolved automatically via GetAccounts; this is
+# only needed to disambiguate when one token sees several accounts.
+account_id = ""
+
+# The master switch for real trading. `mode = "prod"` alone is NOT enough:
+# both this flag and a full-access token in .env must be present before a
+# single real order can leave the process. Keep false unless you mean it.
+enable_real_trading = false
+
+
+### --- Hard risk limits ----------------------------------------------------
+# Enforced twice: when a proposal is created, and again at submit time against
+# fresh market data. The second check is what makes a stale preview unusable.
+#
+# Defaults differ by mode, so switching to prod tightens the caps rather than
+# inheriting whatever you relaxed for sandbox experiments:
+#   prod:    max_order_rub 1500 | max_daily_turnover_rub 3000 | max_position_weight 0.40
+#   sandbox: max_order_rub 500000 | max_daily_turnover_rub 5000000 | max_position_weight 1.0
+#
+# Values below are the SANDBOX defaults, written out so they are visible.
+# Delete them (or set prod values) before switching mode = "prod".
+max_order_rub = "500000"
+max_daily_turnover_rub = "5000000"
+max_position_weight = "1.0"
+
+# A confirmed preview is only good for this long. After it expires the order
+# cannot be submitted — the price it was approved at is no longer real.
+confirmation_ttl_seconds = 60
+
+# Reject a limit price further than this from the live quote. Catches the
+# classic bond mistake: a ruble money price passed where a percent of nominal
+# was expected (a 1000 instead of 99.09 is 10x the market).
+max_price_deviation_pct = "1.0"
+
+# Refuse to price an order against a quote older than this.
+market_data_max_age_seconds = 10
+
+
+### --- Structural restrictions ---------------------------------------------
+# MARKET orders have no price ceiling: in a thin book a market buy can fill
+# far from the last print. LIMIT-only is the default for that reason.
+allow_market_orders = false
+
+# Leverage and short selling can lose more than the account holds.
+allow_margin = false
+allow_shorts = false
+
+# Refuse to operate when the token can see more than one account — so a
+# misrouted order cannot land in an account you did not mean to trade.
+require_single_account_token = true
+
+# Instrument classes the agent may trade at all.
+allowed_instrument_types = ["share", "bond", "etf"]
+
+# Non-empty = strict allowlist of instrument uids. Everything else is refused.
+# The tightest available control: use it to pin the agent to instruments you
+# have personally vetted.
+instrument_allowlist = []
+
+
+### --- Personal mandate (advisory checks on plans) ------------------------
+# Concentration and drift rules applied to a whole rebalance plan, not to
+# single orders. They scale with portfolio size: a small portfolio cannot
+# spread across many names without paying more in commission than the
+# diversification is worth.
+rebalance_threshold_pct = "5"
+mandate_max_issuer_weight = "0.15"
+mandate_max_sector_weight = "0.30"
+mandate_small_portfolio_rub = "100000"
+mandate_small_issuer_weight = "0.30"
+mandate_mid_portfolio_rub = "500000"
+mandate_mid_issuer_weight = "0.20"
+mandate_sovereign_issuer_weight = "0.35"
+mandate_max_fx_exposure = "0.20"
+mandate_min_progress_pp = "1"
+
+
+### --- Trade plans ---------------------------------------------------------
+trade_plan_ttl_seconds = 900
+plan_fallback_commission_pct = "0.3"
+plan_max_cost_to_benefit_ratio = "0.05"
+plan_execution_urgency = "fast"
+
+# Block orders during clearing pauses and outside session hours (a limit
+# submitted then simply rests unmatched), and warn near the close.
+market_session_check_enabled = true
+market_session_close_buffer_seconds = 120
+
+
+### --- Tax estimates (RU private investor) ---------------------------------
+sell_tax_rate = "0.13"
+ldv_warning_months = 6
+corporate_action_warning_days = 30
+
+
+### --- Performance / caching -----------------------------------------------
+analytics_concurrency = 4
+instrument_cache_ttl_seconds = 300
+
+
+### --- Files the server writes ---------------------------------------------
+# Relative paths resolve against the state directory: $TINVEST_MCP_STATE_DIR,
+# else this config file's own directory, else ~/.local/state/tinvest-mcp.
+# NOT against the working directory, which an MCP client picks arbitrarily.
+audit_log = "audit.jsonl"
+investment_profile_path = "investment_profile.json"
+
+
+### --- TLS ------------------------------------------------------------------
+# T-Bank's API presents a certificate from the Russian national CA, which is
+# not in certifi. The needed root ships with this package and is applied to
+# THIS PROCESS's gRPC channels only — never to your system trust store.
+# Set this to override with your own bundle. See docs/security.md § TLS.
+ca_bundle = ""

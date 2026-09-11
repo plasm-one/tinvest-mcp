@@ -1,0 +1,72 @@
+# --- Secrets: never commit -------------------------------------------------
+.env
+.env.*
+!.env.example
+*.token
+*.pem
+!src/tinvest_mcp/certs/*.pem
+
+# --- Local configuration and state ----------------------------------------
+# config.toml is secret-free by design, but it is per-deployment: commit
+# config.toml.example instead, so nobody inherits someone else's risk limits.
+config.toml
+audit.jsonl
+investment_profile.json
+logs/
+*.jsonl
+!tests/**/*.jsonl
+
+# --- Python ----------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+develop-eggs/
+downloads/
+eggs/
+.eggs/
+sdist/
+wheels/
+*.egg-info/
+*.egg
+.installed.cfg
+MANIFEST
+
+# --- Environments ----------------------------------------------------------
+.venv/
+venv/
+ENV/
+env/
+.python-version
+
+# --- Tooling caches --------------------------------------------------------
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+.tox/
+.nox/
+
+# --- Lockfile --------------------------------------------------------------
+# Not committed: this is a library-shaped package installed from an index, and
+# a lockfile here would pin versions for every consumer. Run `uv lock` in your
+# own deployment if you want reproducible builds there.
+uv.lock
+
+# --- Vendored wheels (optional local install path) -------------------------
+# Keep the directory, ignore the binaries: a wheel is not source.
+vendor/*.whl
+
+# --- Editors and OS --------------------------------------------------------
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db

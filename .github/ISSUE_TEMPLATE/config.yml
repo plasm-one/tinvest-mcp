@@ -1,0 +1,20 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 🔒 Security vulnerability
+    url: https://github.com/plasm-one/tinvest-mcp/security/advisories/new
+    about: >
+      Report privately. This software holds brokerage credentials — a public
+      issue is an exploit notice. Or email alex@plasm.one.
+  - name: 📖 Documentation
+    url: https://github.com/plasm-one/tinvest-mcp/tree/main/docs
+    about: >
+      Installation, security model, configuration reference, tool reference.
+      Most setup questions are answered in installation.md.
+  - name: ⚠️ Problem with T-Bank's API or platform
+    url: https://developer.tbank.ru/invest/intro/intro
+    about: >
+      This is an unofficial client. Broker outages, rate limits, API changes
+      and account questions go to T-Bank, not here.
+  - name: 💬 Questions and ideas
+    url: https://github.com/plasm-one/tinvest-mcp/discussions
+    about: Anything that is not a bug report or a concrete feature request.
