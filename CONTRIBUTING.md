@@ -79,7 +79,8 @@ that would have caught the bug.
 * Docstrings on modules and public functions, stating the non-obvious
   constraint if there is one.
 * Code and comments in English. User-facing docs may be bilingual (EN + RU) —
-  if you change a fact in `README.md` or `docs/security.md`, update the `.ru`
+  `README.md` is Russian (the primary audience) and `README.en.md` is English;
+  if you change a fact in one of them or in `docs/security.md`, update the
   counterpart, or say in the PR that it needs translating.
 
 ## Tool descriptions are part of the interface

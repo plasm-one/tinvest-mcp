@@ -1,6 +1,6 @@
 # Installation
 
-The short path is in the [README](../README.md#installation). This document is
+The short path is in the [README](../README.en.md#installation). This document is
 the long one: every client, the token in detail, and what to do when something
 does not work.
 
@@ -422,7 +422,7 @@ store — see [security.md § TLS](security.md#tls-and-the-russian-ca).
 ### `Real trading is disabled`
 
 Working as intended. Two flags plus a token are required — see
-[README § Going to production](../README.md#going-to-production). If you did
+[README § Going to production](../README.en.md#going-to-production). If you did
 not mean to trade for real, nothing is wrong.
 
 ### Orders sit at `SUBMITTED` with `lots_executed=0`
