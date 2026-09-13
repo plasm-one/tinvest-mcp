@@ -1,9 +1,10 @@
-<h1 align="center">tinvest-mcp</h1>
+<h1 align="center">tinvest-mcp — MCP-сервер для Т-Инвестиций</h1>
 
 <p align="center">
-  <strong>A local MCP server for the T-Bank Invest (T-Invest) brokerage API.</strong><br>
-  Research, portfolio analytics, risk-checked order previews, gated execution.<br>
-  <sub>Infrastructure for <strong>AI wealth management</strong>: the model reasons, the limits are code.</sub>
+  <strong>Подключите ИИ к своему счёту в Т-Инвестициях (Тинькофф Инвестиции).</strong><br>
+  Локальный MCP-сервер для T-Invest API: Claude, Cursor, VS Code и другие ИИ-ассистенты<br>
+  анализируют портфель, подбирают облигации, акции и фонды, считают риск и готовят заявки.<br>
+  <sub>Инфраструктура для <strong>AI wealth management</strong>: модель рассуждает, лимиты — это код.</sub>
 </p>
 
 <p align="center">
@@ -12,228 +13,238 @@
   <img alt="MCP" src="https://img.shields.io/badge/protocol-MCP-8A2BE2.svg">
   <img alt="Status: beta" src="https://img.shields.io/badge/status-beta-orange.svg">
   <br>
-  <em>Built by the <a href="https://plasm.one">Plasm</a> team — we build
+  <em>Сделано командой <a href="https://plasm.one">Plasm</a> — мы строим
   <a href="https://plasm.one/future-of-finance">autonomous finance</a></em>
 </p>
 
 <p align="center">
-  <a href="README.ru.md">🇷🇺 Русская версия</a> ·
-  <a href="docs/installation.md">Installation</a> ·
-  <a href="docs/security.md">Security model</a> ·
-  <a href="docs/configuration.md">Configuration</a> ·
-  <a href="docs/tools.md">Tool reference</a>
+  <a href="README.en.md">🇬🇧 English</a> ·
+  <a href="docs/installation.md">Установка</a> ·
+  <a href="docs/security.ru.md">Модель безопасности</a> ·
+  <a href="docs/configuration.md">Конфигурация</a> ·
+  <a href="docs/tools.md">Справочник тулов</a>
 </p>
 
 ---
 
 > [!WARNING]
-> **Unofficial software that can move real money.** Not affiliated with,
-> endorsed by, or supported by T-Bank / Т-Банк. Not investment advice. An MCP
-> server that holds brokerage tools carries risks that no amount of code can
-> fully remove — prompt injection and model error among them.
-> **Read [DISCLAIMER.md](DISCLAIMER.md) and [docs/security.md](docs/security.md)
-> before you connect a production token.** Default mode is `sandbox`, and real
-> trading stays off until you turn on two separate switches. Please leave it
-> that way until you have read both documents.
+> **Неофициальное ПО, которое может двигать реальные деньги.** Не аффилировано
+> с Т-Банком, не одобрено и не поддерживается им. Не является инвестиционной
+> рекомендацией. MCP-сервер с брокерскими инструментами несёт риски, которые
+> никакой код не убирает полностью — prompt injection и ошибки модели в их числе.
+> **Прочитайте [DISCLAIMER.md](DISCLAIMER.md) и
+> [docs/security.ru.md](docs/security.ru.md) прежде, чем подключить продовый
+> токен.** По умолчанию режим `sandbox`, а реальная торговля выключена до тех
+> пор, пока вы не включите два отдельных переключателя. Пожалуйста, так и
+> оставьте, пока не прочитаете оба документа.
 
 ---
 
-## What this is
+## Что это
 
-An MCP ([Model Context Protocol](https://modelcontextprotocol.io)) server that
-runs **on your own machine** and gives an AI assistant 35 tools for working with
-a T-Invest brokerage account: reading the portfolio, screening the instrument
-catalogue, computing yield and risk, building a rebalance plan, and — behind
-explicit gates — submitting limit orders.
+**tinvest-mcp** — MCP-сервер ([Model Context Protocol](https://modelcontextprotocol.io))
+для Т-Инвестиций (бывшие Тинькофф Инвестиции). Он работает **на вашей машине** и
+даёт ИИ-ассистенту 35 инструментов для работы с брокерским счётом через T-Invest
+API: чтение портфеля, скрининг каталога инструментов, расчёт доходности и риска,
+построение плана ребалансировки и — за явными гейтами — выставление лимитных
+заявок.
 
-The design premise is that **the model is a research assistant, not a trader**.
-Reads are open; everything that touches money goes through a preview that the
-model cannot skip, priced against a fresh quote, bounded by numeric limits that
-live in your config file rather than in a prompt.
+Иными словами, это способ подключить ИИ к Т-Инвестициям так, чтобы он помогал
+разбираться с портфелем, но не мог выйти за заданные вами лимиты.
+
+Исходная посылка дизайна: **модель — это ресёрч-ассистент, а не трейдер.**
+Чтение открыто; всё, что касается денег, идёт через превью, которое модель не
+может пропустить, оценивается по свежей котировке и ограничено численными
+лимитами, живущими в вашем конфиг-файле, а не в промпте.
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/wutas/tinvest-mcp/main/docs/assets/architecture.png"
-       alt="Claude Code / Cursor / VS Code talk to tinvest-mcp over stdio; tinvest-mcp talks to the T-Bank Invest API over gRPC+TLS and reads .env, config.toml and audit.jsonl from your machine"
+  <img src="https://raw.githubusercontent.com/plasm-one/tinvest-mcp/main/docs/assets/architecture.png"
+       alt="Claude Code / Cursor / VS Code общаются с tinvest-mcp через stdio; tinvest-mcp ходит в T-Bank Invest API по gRPC+TLS и читает .env, config.toml и audit.jsonl с вашей машины"
        width="900">
 </p>
 
-**The token never goes anywhere except to the broker that issued it.** It is not
-stored in your editor's config, not synced between machines, and not sent to any
-third party — including us. See [docs/security.md](docs/security.md) for why
-that matters and for the risks this design does *not* remove.
+**Токен не уходит никуда, кроме брокера, который его выпустил.** Он не хранится
+в конфиге вашего редактора, не синхронизируется между машинами и не
+отправляется никакой третьей стороне — включая нас. Почему это важно и какие
+риски такой дизайн **не** снимает — в [docs/security.ru.md](docs/security.ru.md).
 
-## Why an MCP server for a brokerage at all
+## Зачем вообще MCP-сервер для брокера
 
-The hard part of managing your own money is not order entry — brokers have
-perfectly good apps for that. It is the reasoning around it: *what do I actually
-hold, what is it costing me, what should change now that my situation has
-changed, and what must never happen whatever the argument for it.*
+Сложное в управлении своими деньгами — не выставление заявок, для этого у
+брокеров есть нормальные приложения. Сложное — это рассуждение вокруг:
+*что у меня на самом деле лежит, во что это мне обходится, что должно
+поменяться теперь, когда поменялась моя ситуация, и чего не должно случиться
+никогда, каким бы убедительным ни был довод.*
 
-A language model is genuinely good at the first three. It is unreliable at the
-fourth — and the fourth is the one that loses money. So the split this server
-makes is deliberate: the model gets deep read access and the job of explaining,
-while every constraint that must hold lives in code and in your config file,
-where a persuasive argument cannot reach it.
+Языковая модель действительно хороша в первых трёх. Она ненадёжна в четвёртом —
+а именно четвёртое теряет деньги. Поэтому разделение здесь сделано осознанно:
+модель получает глубокий доступ на чтение и работу по объяснению, а каждое
+ограничение, которое обязано держаться, живёт в коде и в вашем конфиг-файле —
+там, куда убедительный довод не достаёт.
 
-That is what makes MCP the right shape here. Not "chat with your broker", but: a
-model that can read your whole position, reason about it in the terms you care
-about, propose one concrete change with the arithmetic already done — and hand
-you a decision you can check, while the boundaries it cannot cross are enforced
-somewhere it has no access to.
+Именно это делает MCP правильной формой для задачи. Не «чат с брокером», а:
+модель, которая видит всю позицию, рассуждает о ней в ваших терминах,
+предлагает одно конкретное изменение с уже посчитанной арифметикой — и отдаёт
+вам решение, которое вы можете проверить, пока границы, которые ей не перейти,
+принуждаются там, куда у неё нет доступа.
 
-This is what **AI wealth management** has to look like before it can be trusted
-with a real account: not an agent that trades, but an agent that reasons, inside
-limits that are not up for negotiation.
+Так и должен выглядеть **AI wealth management**, прежде чем ему можно доверить
+реальный счёт: не агент, который торгует, а агент, который рассуждает — внутри
+лимитов, не подлежащих обсуждению.
 
-## Why this and not T-Bank's own MCP server
+## Почему это, а не собственный MCP Т-Банка
 
-T-Bank publishes a first-party hosted MCP server. It is a good product and if
-you want vendor support, use it. The two make different trade-offs:
+У Т-Банка есть собственный размещённый MCP-сервер. Это хороший продукт, и если
+вам нужна поддержка вендора — берите его. Компромиссы у них разные:
 
-| | **tinvest-mcp** (this) | **T-Bank hosted MCP** |
+| | **tinvest-mcp** (этот) | **Размещённый MCP Т-Банка** |
 |---|---|---|
-| Runs | on your machine | on T-Bank's servers |
-| Token lives in | `.env`, read by one local process | your editor's MCP config, sent with every request |
-| Transport | stdio (no open port) | streamable HTTP |
-| Execution gate | preview → fresh-quote re-check → explicit submit | tool call places the order |
-| Risk limits | yours, in `config.toml` | broker-side, not user-configurable |
-| Sandbox | yes | no |
-| Claude Desktop | works (stdio) | not supported |
-| Untrusted content in context | no news/sentiment tools by design | news + sentiment + analyst ideas |
-| Support | community, best-effort | first-party |
-| Setup effort | Python install, ~10 minutes | one command |
+| Где работает | на вашей машине | на серверах Т-Банка |
+| Токен лежит в | `.env`, читает один локальный процесс | MCP-конфиге редактора, уходит с каждым запросом |
+| Транспорт | stdio (нет открытого порта) | streamable HTTP |
+| Гейт исполнения | превью → перепроверка по свежей котировке → явная отправка | вызов тула выставляет заявку |
+| Риск-лимиты | ваши, в `config.toml` | на стороне брокера, не настраиваются |
+| Sandbox | есть | нет |
+| Claude Desktop | работает (stdio) | не поддерживается |
+| Недоверенный контент в контексте | нет тулов новостей by design | новости + sentiment + инвестидеи |
+| Поддержка | сообщество, по возможности | первая сторона |
+| Сложность установки | Python, ~10 минут | одна команда |
 
-Honest summary: theirs is faster to set up and vendor-supported; this one keeps
-the credential local, lets you set your own hard caps, and does not put
-untrusted text in the same context as trading tools.
-Full write-up: [docs/comparison.md](docs/comparison.md).
+Честный итог: их вариант ставится быстрее и поддерживается вендором; этот —
+держит credential локально, позволяет задать собственные жёсткие потолки и не
+кладёт недоверенный текст в один контекст с торговыми инструментами.
+Подробный разбор: [docs/comparison.md](docs/comparison.md).
 
-## What it can do
+## Что он умеет
 
-**Research (read-only, always available)**
+**Ресёрч (только чтение, доступен всегда)**
 
-* Portfolio: cash, positions, allocation by class/sector/currency/issuer,
-  concentration, weighted yield, bond duration, drift against a saved target.
-* Screeners with a separate tool per asset class, so rows carry only the fields
-  that mean something for that class: `list_bonds`, `list_shares`, `list_etfs`.
-  Filter by risk, maturity, duration, sector, dividends, liquidity floor.
-* Per-instrument: historical return, annualised volatility, max drawdown, bond
-  YTM / current yield / coupon schedule, share dividend yield, fundamentals
-  (P/E, EV/EBITDA, ROE, margins, debt), analyst consensus, ETF fees and index.
-* Market snapshot: bid/ask/last, spread, quote age, and three suggested limit
-  prices (patient / balanced / fast) so a price is chosen from the book rather
-  than guessed by the model.
-* Operation history: trades, commissions, coupons, dividends, withheld tax.
+* Портфель: деньги, позиции, аллокация по классам/секторам/валютам/эмитентам,
+  концентрация, взвешенная доходность, дюрация облигационной части, дрейф
+  относительно сохранённой цели.
+* Скринеры с отдельным тулом на каждый класс активов, так что в строках только
+  значимые для класса поля: `list_bonds`, `list_shares`, `list_etfs`. Фильтры
+  по риску, погашению, дюрации, сектору, дивидендам, порогу ликвидности.
+* По инструменту: историческая доходность, годовая волатильность,
+  макс. просадка, YTM / текущая доходность / график купонов для облигаций,
+  дивдоходность акций, фундаментал (P/E, EV/EBITDA, ROE, маржа, долг),
+  консенсус аналитиков, комиссии и индекс для ETF.
+* Рыночный снапшот: bid/ask/last, спред, возраст котировки и три предложенные
+  лимитные цены (patient / balanced / fast), чтобы цена брались из стакана, а
+  не угадывалась моделью.
+* История операций: сделки, комиссии, купоны, дивиденды, удержанный налог.
 
-**Planning (read-only)**
+**Планирование (только чтение)**
 
-* A deterministic target allocation from `risk_profile × horizon` — a rule
-  table in code, not a model opinion.
-* Whole-basket rebalance plans: sells sequenced before buys, every leg priced
-  with commission and accrued interest, FIFO tax lots with the 3-year ЛДВ
-  exemption applied, plus a `WORTH_IT` / `NOT_WORTH_IT` verdict that will tell
-  you to do nothing when costs exceed the benefit.
+* Детерминированная целевая аллокация из `risk_profile × horizon` — таблица
+  правил в коде, а не мнение модели.
+* Планы ребалансировки целой корзиной: продажи выстраиваются перед покупками,
+  каждый шаг оценён с комиссией и НКД, налоговые лоты по FIFO с трёхлетней
+  льготой ЛДВ, плюс вердикт `WORTH_IT` / `NOT_WORTH_IT`, который честно скажет
+  ничего не делать, если издержки превышают выгоду.
 
-**Execution (off by default, gated)**
+**Исполнение (выключено по умолчанию, за гейтами)**
 
-* `create_order_proposal` → risk-checked preview, places nothing.
-* `post_order` → submits a still-valid proposal by id, re-checking risk against
-  a fresh quote. LIMIT only. Idempotent.
-* Trade plans add two more gates: confirm the whole plan, then confirm each
-  individual leg's execution card.
+* `create_order_proposal` → риск-проверенное превью, ничего не выставляет.
+* `post_order` → отправляет ещё валидную заявку по её id, перепроверив риск по
+  свежей котировке. Только LIMIT. Идемпотентно.
+* Торговые планы добавляют ещё два гейта: подтверждение всего плана, затем
+  подтверждение карточки исполнения каждого отдельного шага.
 
-Full list with arguments and return shapes: [docs/tools.md](docs/tools.md).
+Полный список с аргументами и формами ответов: [docs/tools.md](docs/tools.md).
 
-## Requirements
+## Требования
 
 * **Python 3.12+**
-* An MCP-capable client: Claude Code, Claude Desktop, Cursor, VS Code (agent
-  mode), Gemini CLI, Qwen Code, or anything else that speaks MCP over stdio.
-* A T-Invest API token (free, issued in the broker's web interface — next section).
-* [`uv`](https://docs.astral.sh/uv/) recommended; plain `pip` works fine.
+* MCP-клиент: Claude Code, Claude Desktop, Cursor, VS Code (агентный режим),
+  Gemini CLI, Qwen Code — или любой другой, говорящий MCP по stdio.
+* Токен API T-Invest (бесплатный, выпускается в веб-интерфейсе брокера — см.
+  следующий раздел).
+* [`uv`](https://docs.astral.sh/uv/) рекомендуется; обычный `pip` тоже подойдёт.
 
-## Installation
+## Установка
 
-### 1. Get the code and install
+### 1. Забрать код и поставить зависимости
 
 ```bash
 git clone https://github.com/plasm-one/tinvest-mcp.git
 cd tinvest-mcp
-uv sync                      # or: python3 -m venv .venv && .venv/bin/pip install -e .
+uv sync                      # или: python3 -m venv .venv && .venv/bin/pip install -e .
 ```
 
 <details>
-<summary>If the T-Invest SDK will not install</summary>
+<summary>Если SDK T-Invest не устанавливается</summary>
 
-The gRPC SDK (`t-tech-investments`) is served from an index that has been known
-to return truncated wheels, which breaks `uv sync` with a hash or archive error.
-Two fallbacks, both supported out of the box:
+gRPC SDK (`t-tech-investments`) раздаётся с индекса, который, как известно,
+отдавал обрезанные wheel-файлы — это ломает `uv sync` ошибкой хеша или архива.
+Два поддерживаемых обходных пути:
 
-1. **Legacy package.** `tinvest_mcp.sdk` imports `t_tech.invest` and falls back
-   to `tinkoff.invest` automatically, so installing the older
-   `tinkoff-investments` package instead works:
+1. **Легаси-пакет.** `tinvest_mcp.sdk` импортирует `t_tech.invest` и
+   автоматически откатывается на `tinkoff.invest`, поэтому установка старого
+   пакета тоже работает:
    ```bash
    uv pip install tinkoff-investments
    ```
-2. **Vendored wheel.** Put a verified wheel in `vendor/` and uncomment the
-   `[tool.uv.sources]` block at the bottom of `pyproject.toml`.
+2. **Вендоренный wheel.** Положите проверенный wheel в `vendor/` и
+   раскомментируйте блок `[tool.uv.sources]` в конце `pyproject.toml`.
 
-`tinvest-mcp` prints which one it loaded in the `status` tool's `sdk_package`
-field. Details: [docs/installation.md](docs/installation.md#if-the-sdk-will-not-install).
+Какой пакет реально загрузился, `tinvest-mcp` показывает в поле `sdk_package`
+тула `status`. Подробнее:
+[docs/installation.md](docs/installation.md#if-the-sdk-will-not-install).
 </details>
 
-### 2. Create your API token
+### 2. Создать токен API
 
-In T-Bank Invest: **Settings → API tokens → Create token**
-(web: <https://www.tbank.ru/invest/settings/api/> · docs:
+В Т-Банк Инвестиции: **Настройки → Токены API → Создать токен**
+(веб: <https://www.tbank.ru/invest/settings/api/> · документация:
 <https://developer.tbank.ru/invest/intro/intro/token>).
 
-You choose a **scope** at creation, and the choice is the single most important
-security decision in this whole setup:
+При создании вы выбираете **скоуп**, и это самое важное решение по
+безопасности во всей настройке:
 
-| Scope | Use it for | Verdict |
+| Скоуп | Для чего | Вердикт |
 |---|---|---|
-| **Read-only** | everything this server does except placing orders | ✅ **start here, and stay here** |
-| **Full access** | placing real orders | ⚠️ only if you truly want the agent to trade |
-| **+ money transfers** | moving cash between accounts | ❌ **never** — this server does not use it, and it turns a leaked file into a withdrawal |
+| **Только чтение** | всё, что делает сервер, кроме выставления заявок | ✅ **начните здесь и здесь же оставайтесь** |
+| **Полный доступ** | выставление реальных заявок | ⚠️ только если вы действительно хотите, чтобы агент торговал |
+| **+ переводы денег** | движение денег между счетами | ❌ **никогда** — сервер этого не использует, а утёкший файл превращается в вывод средств |
 
 > [!IMPORTANT]
-> The token is displayed **once** and cannot be recovered. Save it immediately.
-> If you ever lose track of a token, revoke it in the same screen and issue a
-> new one — revocation is instant and free.
+> Токен показывается **один раз** и не восстанавливается. Сохраните его сразу.
+> Если потеряли контроль над токеном — отзовите его в том же экране и выпустите
+> новый. Отзыв мгновенный и бесплатный.
 
-For the safest production setup, issue **two separate tokens**: a read-only one
-for research and a full-access one you leave out of the config entirely until
-the day you actually want to execute. The server checks at startup that they
-are not the same string.
+Для самой безопасной продовой схемы выпустите **два токена**: read-only для
+ресёрча и full-access, который вы вообще не вносите в конфиг до того дня, когда
+действительно захотите исполнять. Сервер на старте проверяет, что это не одна и
+та же строка.
 
-### 3. Give the server the token
+### 3. Передать серверу токен
 
-Tokens go in a `.env` file — **never** in your editor's MCP config, which tends
-to get committed to git or synced between machines.
+Токены кладутся в файл `.env` — **никогда** в MCP-конфиг редактора, который
+имеет свойство попадать в git и синхронизироваться между машинами.
 
 ```bash
 cp .env.example .env
 cp config.toml.example config.toml
-chmod 600 .env                # owner-only; do this
+chmod 600 .env                # только владельцу; сделайте это
 ```
 
-Then edit `.env`. To start in sandbox (recommended):
+Затем отредактируйте `.env`. Для старта в песочнице (рекомендуется):
 
 ```dotenv
-TINVEST_SANDBOX_TOKEN=t.your_token_here
+TINVEST_SANDBOX_TOKEN=t.ваш_токен
 ```
 
-That is the whole secret configuration. Everything else — mode, risk limits,
-transport — is non-secret and lives in `config.toml`.
+Это вся секретная конфигурация. Всё остальное — режим, риск-лимиты, транспорт —
+несекретное и живёт в `config.toml`.
 
 <details>
-<summary>Recommended: keep config outside the repo</summary>
+<summary>Рекомендуется: держать конфиг вне репозитория</summary>
 
-An MCP client starts the server with an arbitrary working directory, so the
-server searches for `config.toml` and `.env` upward from the cwd and then in
-`~/.config/tinvest-mcp/`. Putting them there works from anywhere and keeps
-secrets out of any repo:
+MCP-клиент запускает сервер с произвольным рабочим каталогом, поэтому сервер
+ищет `config.toml` и `.env` вверх от cwd, а затем в `~/.config/tinvest-mcp/`.
+Положив их туда, вы получите работу из любого каталога и секреты вне любого
+репозитория:
 
 ```bash
 mkdir -p ~/.config/tinvest-mcp
@@ -243,16 +254,16 @@ chmod 600 ~/.config/tinvest-mcp/.env
 ```
 </details>
 
-### 4. Verify before wiring up a client
+### 4. Проверить до подключения клиента
 
 ```bash
-uv run tinvest-mcp-doctor       # or: .venv/bin/tinvest-mcp-doctor
+uv run tinvest-mcp-doctor       # или: .venv/bin/tinvest-mcp-doctor
 ```
 
-This resolves your configuration, reports which files it actually found, which
-tokens are present (masked), and runs the startup security checks — without
-starting a server, opening a port, or placing anything. Expected on a fresh
-sandbox setup:
+Команда разрешает вашу конфигурацию, показывает, какие файлы реально нашлись,
+какие токены есть (маскированно), и прогоняет стартовые проверки безопасности —
+не поднимая сервер, не открывая порт и ничего не выставляя. Ожидаемо на свежей
+песочнице:
 
 ```
 Resolved files
@@ -282,29 +293,29 @@ Startup security checks
 [ok]   limits_configured: max_order_rub=500000 max_daily=5000000
 ```
 
-The "Resolved files" block is the one to read twice: a `config.toml` the server
-did not find is a `config.toml` whose limits are not in effect.
+Блок «Resolved files» стоит перечитать дважды: `config.toml`, который сервер не
+нашёл, — это `config.toml`, чьи лимиты не действуют.
 
-### 5. Connect your client
+### 5. Подключить клиента
 
-All clients need the same thing: the **absolute path** to the `tinvest-mcp`
-executable inside your virtualenv. Find it with `readlink -f .venv/bin/tinvest-mcp`
-(or `uv run which tinvest-mcp`).
+Всем клиентам нужно одно и то же: **абсолютный путь** до исполняемого файла
+`tinvest-mcp` внутри вашего virtualenv. Найти его:
+`readlink -f .venv/bin/tinvest-mcp` (или `uv run which tinvest-mcp`).
 
 <details open>
 <summary><strong>Claude Code</strong></summary>
 
 ```bash
-claude mcp add tinvest -- /absolute/path/to/tinvest-mcp/.venv/bin/tinvest-mcp
+claude mcp add tinvest -- /абсолютный/путь/tinvest-mcp/.venv/bin/tinvest-mcp
 ```
 
-Or by hand in `.mcp.json` (project) / `~/.claude.json` (user):
+Или вручную в `.mcp.json` (проект) / `~/.claude.json` (пользователь):
 
 ```json
 {
   "mcpServers": {
     "tinvest": {
-      "command": "/absolute/path/to/tinvest-mcp/.venv/bin/tinvest-mcp"
+      "command": "/абсолютный/путь/tinvest-mcp/.venv/bin/tinvest-mcp"
     }
   }
 }
@@ -314,34 +325,34 @@ Or by hand in `.mcp.json` (project) / `~/.claude.json` (user):
 <details>
 <summary><strong>Claude Desktop</strong></summary>
 
-Edit `claude_desktop_config.json`
+Отредактируйте `claude_desktop_config.json`
 (macOS: `~/Library/Application Support/Claude/`,
-Windows: `%APPDATA%\Claude\`), then restart the app:
+Windows: `%APPDATA%\Claude\`) и полностью перезапустите приложение:
 
 ```json
 {
   "mcpServers": {
     "tinvest": {
-      "command": "/absolute/path/to/tinvest-mcp/.venv/bin/tinvest-mcp"
+      "command": "/абсолютный/путь/tinvest-mcp/.venv/bin/tinvest-mcp"
     }
   }
 }
 ```
 
-Claude Desktop speaks stdio, which is what this server uses by default — so
-unlike hosted streamable-HTTP MCP servers, this one works there.
+Claude Desktop говорит по stdio — а это транспорт этого сервера по умолчанию,
+так что, в отличие от размещённых streamable-HTTP серверов, здесь он работает.
 </details>
 
 <details>
 <summary><strong>Cursor</strong></summary>
 
-`.cursor/mcp.json` (project) or `~/.cursor/mcp.json` (global):
+`.cursor/mcp.json` (проект) или `~/.cursor/mcp.json` (глобально):
 
 ```json
 {
   "mcpServers": {
     "tinvest": {
-      "command": "/absolute/path/to/tinvest-mcp/.venv/bin/tinvest-mcp"
+      "command": "/абсолютный/путь/tinvest-mcp/.venv/bin/tinvest-mcp"
     }
   }
 }
@@ -349,36 +360,35 @@ unlike hosted streamable-HTTP MCP servers, this one works there.
 </details>
 
 <details>
-<summary><strong>VS Code (agent mode)</strong></summary>
+<summary><strong>VS Code (агентный режим)</strong></summary>
 
-`.vscode/mcp.json` — note VS Code uses `servers`, not `mcpServers`:
+`.vscode/mcp.json` — обратите внимание, у VS Code ключ `servers`, не `mcpServers`:
 
 ```json
 {
   "servers": {
     "tinvest": {
       "type": "stdio",
-      "command": "/absolute/path/to/tinvest-mcp/.venv/bin/tinvest-mcp"
+      "command": "/абсолютный/путь/tinvest-mcp/.venv/bin/tinvest-mcp"
     }
   }
 }
 ```
 
-Do not add a token here: `.vscode/` is commonly committed. This server reads it
-from `.env` precisely so your editor config stays free of secrets.
+Токен сюда не добавляйте: `.vscode/` обычно коммитится. Сервер читает его из
+`.env` именно для того, чтобы конфиг редактора оставался без секретов.
 </details>
 
 <details>
-<summary><strong>Config in a non-standard location</strong></summary>
+<summary><strong>Конфиг в нестандартном месте</strong></summary>
 
-If your files are not discoverable from the working directory, point at them
-explicitly:
+Если ваши файлы не находятся от рабочего каталога, укажите их явно:
 
 ```json
 {
   "mcpServers": {
     "tinvest": {
-      "command": "/absolute/path/to/.venv/bin/tinvest-mcp",
+      "command": "/абсолютный/путь/.venv/bin/tinvest-mcp",
       "env": {
         "TINVEST_MCP_CONFIG": "/Users/you/.config/tinvest-mcp/config.toml",
         "TINVEST_MCP_ENV_FILE": "/Users/you/.config/tinvest-mcp/.env"
@@ -388,34 +398,35 @@ explicitly:
 }
 ```
 
-These are *paths*, not secrets — safe to commit.
+Это *пути*, а не секреты — коммитить их безопасно.
 </details>
 
-### 6. First run, in sandbox
+### 6. Первый запуск, в песочнице
 
-Ask your assistant:
+Попросите ассистента:
 
-> Check the T-Invest server status, open a sandbox account, fund it with
-> 100 000 ₽ of virtual money, then show me the portfolio.
+> Проверь статус сервера T-Invest, открой счёт в песочнице, заведи туда
+> 100 000 ₽ виртуальных денег и покажи портфель.
 
-Then try a full loop end to end — screen some bonds, look at one in detail, get
-a market snapshot, create an order proposal, read the preview, and only then
-submit it. Sandbox money is fake; this is the place to learn what each gate
-does and what the previews look like before any of it is real.
+Затем прогоните весь цикл целиком — поскринить облигации, посмотреть одну
+детально, взять рыночный снапшот, создать превью заявки, прочитать его и только
+потом отправить. Деньги в песочнице ненастоящие; это правильное место, чтобы
+понять, что делает каждый гейт и как выглядят превью, до того как всё станет
+реальным.
 
-There is also a scripted version of the same loop:
+Есть и скриптовая версия того же цикла:
 
 ```bash
 uv run python -m tinvest_mcp.scripts.sandbox_smoke
 ```
 
-## Going to production
+## Выход в прод
 
-Do this deliberately, in this order, and read
-[docs/security.md](docs/security.md) first.
+Делайте это осознанно, в этом порядке, и сначала прочитайте
+[docs/security.ru.md](docs/security.ru.md).
 
-**Research only — the recommended production setup.** Put a read-only token in
-`.env`, leave `TINVEST_FULLACCESS_TOKEN` empty, and set:
+**Только ресёрч — рекомендуемая продовая схема.** Положите read-only токен в
+`.env`, оставьте `TINVEST_FULLACCESS_TOKEN` пустым и задайте:
 
 ```toml
 [tinvest]
@@ -423,131 +434,137 @@ mode = "prod"
 enable_real_trading = false
 ```
 
-The agent now sees your real portfolio and real prices and **cannot place an
-order** — not by policy but structurally: the execution path has no credential
-to authenticate with. Most people should stop here.
+Агент теперь видит ваш реальный портфель и реальные цены и **не может
+выставить заявку** — не по политике, а структурно: исполняющему пути нечем
+авторизоваться. Большинству стоит остановиться здесь.
 
-**Real trading.** Only if you have decided you want it. All four must be true:
+**Реальная торговля.** Только если вы решили, что хотите её. Должны выполняться
+все четыре условия:
 
-1. `mode = "prod"` in `config.toml`
-2. `enable_real_trading = true` in `config.toml`
-3. `TINVEST_FULLACCESS_TOKEN` set in `.env` (a *different* token from the read-only one)
-4. Risk caps in `config.toml` reviewed and set to numbers you are comfortable
-   losing — **delete any values you relaxed for sandbox.** The prod defaults are
-   1 500 ₽ per order and 3 000 ₽ daily turnover, deliberately small enough that
-   a first mistake is a cheap lesson.
+1. `mode = "prod"` в `config.toml`
+2. `enable_real_trading = true` в `config.toml`
+3. `TINVEST_FULLACCESS_TOKEN` задан в `.env` (это *другой* токен, не read-only)
+4. Риск-лимиты в `config.toml` пересмотрены и выставлены на суммы, которые вам
+   не жалко потерять — **удалите значения, которые вы расслабляли для
+   песочницы.** Продовые дефолты — 1 500 ₽ на заявку и 3 000 ₽ дневного
+   оборота, намеренно маленькие, чтобы первая ошибка стала дешёвым уроком.
 
-## Security
+## Безопасность
 
-Short version:
+Коротко:
 
-* **The token stays local.** Read from `.env` into one process; sent only to
-  T-Bank's own API over TLS. No third party, us included, ever sees it.
-* **Never logged.** Errors, audit records and the settings `repr` are all
-  scrubbed; account ids are masked; keys that look token-shaped are dropped
-  before writing.
-* **Two independent switches** stand between a fresh install and a real order,
-  and the credential for real orders is absent by default.
-* **Hard numeric limits** live in `config.toml`, not in a prompt — per-order
-  value, daily turnover, position weight, price deviation, quote age, LIMIT
-  only, no margin, no shorts, optional strict instrument allowlist.
-* **Re-validation at submit time.** A preview that has aged past its TTL, or
-  whose price no longer matches the book, cannot be executed.
-* **No untrusted content tools.** No news, no sentiment, no web fetch — the
-  usual prompt-injection carriers are simply not in the tool surface.
-* **Append-only audit journal** of every action that left the process.
-* **Loopback and stdio by default.** Nothing listens on a port unless you ask.
+* **Токен остаётся локальным.** Читается из `.env` в один процесс; уходит
+  только в собственный API Т-Банка по TLS. Никакая третья сторона, включая
+  нас, его не видит.
+* **Никогда не логируется.** Ошибки, записи аудита и `repr` настроек
+  зачищены; id счетов маскируются; ключи, похожие на токен, удаляются перед
+  записью.
+* **Два независимых переключателя** стоят между свежей установкой и реальной
+  заявкой, а credential для реальных заявок по умолчанию отсутствует.
+* **Жёсткие численные лимиты** живут в `config.toml`, а не в промпте: сумма
+  заявки, дневной оборот, вес позиции, отклонение цены, возраст котировки,
+  только LIMIT, без маржи, без шортов, опциональный строгий allowlist
+  инструментов.
+* **Перепроверка в момент отправки.** Превью, которое пережило свой TTL или чья
+  цена больше не соответствует стакану, исполниться не может.
+* **Нет тулов с недоверенным контентом.** Ни новостей, ни sentiment, ни
+  веб-запросов — типичных переносчиков prompt injection просто нет в
+  поверхности инструментов.
+* **Журнал аудита только на добавление** по каждому действию, ушедшему из
+  процесса.
+* **Loopback и stdio по умолчанию.** Никто не слушает порт, пока вы не
+  попросите.
 
-Equally important, the things this design does **not** fix — MCP has no caller
-identity, so "the agent must never call `post_order`" is a prompt instruction
-rather than a technical gate; a compromised machine is a compromised account;
-and TLS trust is extended to the Russian national CA for this process's gRPC
-channels. Each is explained, with the mitigation that actually works, in
-**[docs/security.md](docs/security.md)**.
+Не менее важно то, чего этот дизайн **не** решает: в MCP нет идентичности
+вызывающего, поэтому «агент не должен вызывать `post_order`» — это инструкция
+в промпте, а не технический гейт; скомпрометированная машина = скомпрометированный
+счёт; а доверие TLS расширено на российский национальный УЦ для gRPC-каналов
+этого процесса. Каждый пункт разобран, вместе с реально работающей мерой, в
+**[docs/security.ru.md](docs/security.ru.md)**.
 
-Found a vulnerability? See [SECURITY.md](SECURITY.md) — please do not open a
-public issue.
+Нашли уязвимость? См. [SECURITY.md](SECURITY.md) — пожалуйста, не открывайте
+публичный issue.
 
-## Documentation
+## Документация
 
 | | |
 |---|---|
-| [docs/installation.md](docs/installation.md) | Full install, token creation, every client, troubleshooting |
-| [docs/security.md](docs/security.md) | Threat model, what is enforced where, hardening checklist |
-| [docs/configuration.md](docs/configuration.md) | Every `config.toml` key and environment variable |
-| [docs/tools.md](docs/tools.md) | All 35 tools: arguments, returns, which are read-only |
-| [docs/architecture.md](docs/architecture.md) | Layers, the execution gates, how risk checks run |
-| [docs/comparison.md](docs/comparison.md) | Honest comparison with T-Bank's hosted MCP server |
-| [DISCLAIMER.md](DISCLAIMER.md) | Unofficial status, MCP risks, not investment advice |
+| [docs/installation.md](docs/installation.md) | Полная установка, создание токена, все клиенты, разбор проблем |
+| [docs/security.ru.md](docs/security.ru.md) | Модель угроз, что и где проверяется, чеклист усиления |
+| [docs/configuration.md](docs/configuration.md) | Каждый ключ `config.toml` и каждая переменная окружения |
+| [docs/tools.md](docs/tools.md) | Все 35 тулов: аргументы, ответы, какие только читают |
+| [docs/architecture.md](docs/architecture.md) | Слои, гейты исполнения, как работают риск-проверки |
+| [docs/comparison.md](docs/comparison.md) | Честное сравнение с размещённым MCP Т-Банка |
+| [DISCLAIMER.md](DISCLAIMER.md) | Неофициальный статус, риски MCP, не инвестрекомендация |
 
-## Development
+## Разработка
 
 ```bash
-uv sync --all-extras          # dev dependencies
-uv run pytest                 # 213 tests, no network, no token needed
+uv sync --all-extras          # dev-зависимости
+uv run pytest                 # 213 тестов, без сети и без токена
 uv run ruff check .
 uv run ruff format .
 ```
 
-The suite is fully offline: every broker call goes through a fake adapter, and
-the audit journal is redirected to a temp file, so `pytest` is safe to run on a
-machine that has production tokens in its environment.
+Набор тестов полностью офлайновый: все брокерские вызовы идут через фейковый
+адаптер, а журнал аудита перенаправляется в временный файл — поэтому `pytest`
+безопасно запускать на машине, где в окружении лежат продовые токены.
 
 ```
 src/tinvest_mcp/
-  server.py          MCP tool registry and the agent playbook prompt
-  tools.py           tool signatures and validation (the MCP boundary)
-  services.py        orchestration: research, proposals, plans, execution
-  adapter.py         the only module that talks to the broker SDK
-  risk_engine.py     every hard check, one function per rule
-  proposals.py       proposal store with TTL and idempotency keys
-  trade_plan.py      multi-leg plans and their two confirmation gates
-  allocation.py      deterministic target-allocation rule table
-  schemas.py         pydantic models — the contract the model sees
-  journal.py         append-only audit journal
-  config/            config.toml + .env discovery and resolved Settings
-  tls.py             gRPC trust roots for the T-Bank certificate chain
+  server.py          реестр MCP-тулов и playbook-промпт для агента
+  tools.py           подписи тулов и валидация (граница MCP)
+  services.py        оркестрация: ресёрч, превью, планы, исполнение
+  adapter.py         единственный модуль, говорящий с SDK брокера
+  risk_engine.py     все жёсткие проверки, по функции на правило
+  proposals.py       хранилище превью с TTL и ключами идемпотентности
+  trade_plan.py      многошаговые планы и их два гейта подтверждения
+  allocation.py      детерминированная таблица целевых аллокаций
+  schemas.py         pydantic-модели — контракт, который видит модель
+  journal.py         журнал аудита только на добавление
+  config/            поиск config.toml + .env и разрешённые Settings
+  tls.py             корни доверия gRPC для цепочки сертификатов Т-Банка
 ```
 
-Contributions welcome — see [CONTRIBUTING.md](CONTRIBUTING.md). Changes to
-`risk_engine.py`, `proposals.py` or `trade_plan.py` need tests; they are the
-parts that stop money from moving by accident.
+Контрибьюции приветствуются — см. [CONTRIBUTING.md](CONTRIBUTING.md). Изменения
+в `risk_engine.py`, `proposals.py` и `trade_plan.py` требуют тестов: это те
+части, которые не дают деньгам двигаться по ошибке.
 
-## About Plasm
+## О Plasm
 
-We build **autonomous finance** at [Plasm](https://plasm.one) — the idea that
-your financial life should think ahead, adapt, and act, instead of being a pile
-of disconnected products you reconcile by hand. Our vision, in full:
+В [Plasm](https://plasm.one) мы строим **autonomous finance** — идею, что ваша
+финансовая жизнь должна предвидеть, адаптироваться и действовать, а не быть
+набором несвязанных продуктов, которые вы сводите руками. Наш вижен целиком:
 **[The Future of Finance →](https://plasm.one/future-of-finance)**
 
-That vision describes four cooperating agents. This server is a working,
-auditable slice of exactly that model, pointed at one real broker:
+В нём описаны четыре взаимодействующих агента. Этот сервер — работающий и
+проверяемый срез ровно этой модели, направленный на одного реального брокера:
 
-| Plasm agent | Its counterpart here |
+| Агент Plasm | Его воплощение здесь |
 |---|---|
-| **Planning** — find the options for your capital | [`allocation.py`](src/tinvest_mcp/allocation.py) target allocation from a rule table; [`trade_plan.py`](src/tinvest_mcp/trade_plan.py) the priced basket with a worth-it verdict |
-| **Risk** — protect the reserves | [`risk_engine.py`](src/tinvest_mcp/risk_engine.py) per-order caps, price, liquidity and session checks |
-| **Checking** — verify the constraints | the personal mandate: issuer, sector, cash floor, FX exposure, tested against the *resulting* portfolio |
-| **Action** — execute, with your approval | proposal → fresh-quote re-check → explicit submit; nothing moves without you |
+| **Planning** — найти варианты для капитала | [`allocation.py`](src/tinvest_mcp/allocation.py) целевая аллокация по таблице правил; [`trade_plan.py`](src/tinvest_mcp/trade_plan.py) оценённая корзина с вердиктом «стоит ли» |
+| **Risk** — защитить резервы | [`risk_engine.py`](src/tinvest_mcp/risk_engine.py) лимиты на заявку, проверки цены, ликвидности и сессии |
+| **Checking** — проверить ограничения | персональный мандат: эмитент, сектор, минимум денег, валютная экспозиция — проверяется по *итоговому* портфелю |
+| **Action** — исполнить с одобрения | превью → перепроверка по свежей котировке → явная отправка; без вас ничего не двигается |
 
-*"You set the rules. Agents follow them."* — here the rules are literally
-[`config.toml`](config.toml.example), and they are the one thing the model
-cannot edit.
+*«You set the rules. Agents follow them.»* — здесь правила это буквально
+[`config.toml`](config.toml.example), и это единственное, что модель не может
+отредактировать.
 
-And because *intelligence should not depend on the size of your balance*: this
-is MIT-licensed, runs on your own laptop, and needs nothing but a free broker
-API token.
+И поскольку *intelligence should not depend on the size of your balance*: всё
+под MIT, работает на вашем ноутбуке и не требует ничего, кроме бесплатного
+токена API брокера.
 
-Building in this space? We would like to hear from you — <alex@plasm.one>.
+Делаете что-то в этой области? Будем рады поговорить — <alex@plasm.one>.
 
-## License
+## Лицензия
 
 [MIT](LICENSE) © 2026 [Plasm](https://plasm.one)
 
 ---
 
 <p align="center">
-  Built with care by the <a href="https://plasm.one"><strong>Plasm</strong></a> team.<br>
-  <sub>Unofficial. Not affiliated with T-Bank. Not investment advice.<br>
-  Read <a href="DISCLAIMER.md">DISCLAIMER.md</a>.</sub>
+  Сделано с вниманием командой <a href="https://plasm.one"><strong>Plasm</strong></a>.<br>
+  <sub>Неофициально. Не аффилировано с Т-Банком. Не инвестиционная рекомендация.<br>
+  Читайте <a href="DISCLAIMER.md">DISCLAIMER.md</a>.</sub>
 </p>

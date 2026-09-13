@@ -2,13 +2,13 @@
 name = "tinvest-mcp"
 version = "0.1.0"
 description = "Unofficial MCP server for the T-Bank Invest (T-Invest) brokerage API — AI wealth management infrastructure: research, risk-checked order previews, gated execution."
-readme = "README.md"
+readme = "README.en.md"
 requires-python = ">=3.12"
 license = { file = "LICENSE" }
 authors = [{ name = "Plasm", email = "alex@plasm.one" }]
 maintainers = [{ name = "Plasm", email = "alex@plasm.one" }]
 keywords = [
-    "mcp", "model-context-protocol", "tinkoff", "t-invest", "tbank",
+    "mcp", "mcp-server", "model-context-protocol", "tinkoff", "tinkoff-investments", "t-invest", "tbank",
     "brokerage", "investing", "llm", "ai-agent",
     "wealth-management", "ai-wealth-management", "autonomous-finance",
     "portfolio", "rebalancing", "risk-management",
@@ -78,6 +78,7 @@ include = [
     "tests",
     "docs",
     "README.md",
+    "README.en.md",
     "SECURITY.md",
     "DISCLAIMER.md",
     "LICENSE",
