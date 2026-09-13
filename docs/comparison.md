@@ -1,4 +1,4 @@
-# tinvest-mcp vs T-Bank's hosted MCP server
+# tinvest-mcp vs T-Invest MCP (T-Bank's hosted MCP server)
 
 T-Bank publishes a first-party MCP server at
 <https://developer.tbank.ru/invest/mcp>. This document compares the two
@@ -165,4 +165,5 @@ sessions.
 <https://developer.tbank.ru/invest/mcp> and were accurate as of
 September 2026; their product may have changed. Corrections welcome as a pull
 request. We are not affiliated with T-Bank — see
-[DISCLAIMER.md](../DISCLAIMER.md).</sub>
+[DISCLAIMER.md](../DISCLAIMER.md).
+Русская версия: [comparison.ru.md](comparison.ru.md).</sub>
